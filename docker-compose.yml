@@ -22,6 +22,10 @@
 #     (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=oracledb)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=FREEPDB1)))
 #   The host-side Oracle port is 1521.
 #
+#   The SQL Server (Linux) data source is reachable at:
+#     Server=mssqldb,1433;Database=CompanyData;User Id=companydata;Password=<pw>;
+#   The host-side SQL Server port is 1434 (1433 is used by the PBIRS Windows container).
+#
 # Credentials are read from .env — copy .env.example → .env and adjust.
 # =============================================================================
 
@@ -87,8 +91,40 @@ services:
       retries: 10
       start_period: 120s
 
+  # ---------------------------------------------------------------------------
+  # Microsoft SQL Server 2022 on Linux — CompanyData schema / same data set
+  # (Linux container — WSL2 engine, official Microsoft image)
+  # ---------------------------------------------------------------------------
+  mssqldb:
+    platform: linux/amd64
+    build:
+      context: ./mssqldb
+    image: powerbi-mssqldb:latest
+    # ── Ports ─────────────────────────────────────────────────────────────────
+    # Power BI Desktop connection string:
+    #   Server=localhost,1434;Database=CompanyData;User Id=companydata;Password=<pw>;
+    # Host port 1434 is used because 1433 is already mapped to the PBIRS container.
+    ports:
+      - "1434:1433"   # SQL Server listener → Power BI Desktop data source
+    environment:
+      SA_PASSWORD:         ${SA_PASSWORD}   # SQL Server SA password
+      MSSQL_APP_PASSWORD:  ${SA_PASSWORD}   # companydata login password
+      ACCEPT_EULA:         "Y"
+    volumes:
+      - mssqldb-data:/var/opt/mssql          # persist database files
+    # networks:
+      # - powerbi-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U SA -P \"$$SA_PASSWORD\" -Q \"SELECT 1\" > /dev/null 2>&1 || /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P \"$$SA_PASSWORD\" -Q \"SELECT 1\" > /dev/null 2>&1"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 60s
+
 # networks:
 #   powerbi-net:
 #     driver: nat
 volumes:
   oracledb-data:
+  mssqldb-data:

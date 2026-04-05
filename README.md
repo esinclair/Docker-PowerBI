@@ -39,3 +39,6 @@ PowerBi is defintely not supported in containers..
 ## License
 
 MIT license. See the [LICENSE file](LICENSE) for more details.
+
+## MSSQL DB
+Server=localhost,1434;Database=CompanyData;User Id=companydata;Password=<SA_PASSWORD>;
