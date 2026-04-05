@@ -1,0 +1,94 @@
+# =============================================================================
+# Power BI Report Server + SQL Server docker-compose
+# =============================================================================
+#
+# Docker for Windows — WSL2 backend
+# -----------------------------------
+# sqlserver runs as a standard Linux container under the WSL2 engine.
+#
+# pbirs is built from a Windows Server Core image and therefore requires
+# Docker Desktop to be in Windows containers mode:
+#   system tray icon → "Switch to Windows containers…"
+# You cannot run both services simultaneously without LCOW.  A common
+# workflow is to run sqlserver with WSL2, switch modes to build/run pbirs,
+# then point PBIRS at the host SQL Server port (localhost,1434).
+#
+# Start services:
+#   docker compose up -d
+#
+# Network note:
+#   Both services share the 'powerbi-net' bridge network.
+#   From within PBIRS, the Oracle data source is reachable at:
+#     (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=oracledb)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=FREEPDB1)))
+#   The host-side Oracle port is 1521.
+#
+# Credentials are read from .env — copy .env.example → .env and adjust.
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Power BI Report Server (Windows container)
+  # ---------------------------------------------------------------------------
+  pbirs:
+    platform: windows/amd64
+    build:
+      context: .
+    image: pbirs:latest
+    # ── Ports exposed to the host (and therefore to Power BI Desktop) ──────────
+    # Power BI Desktop connects to Report Server via the web portal URL.
+    # Use http://localhost/reports  (port 80)  or
+    #     https://localhost/reports (port 443) if TLS is configured.
+    # Port 8080 is the PBIRS REST API / dataset endpoint.
+    ports:
+      - "1433:1433"   # PBIRS internal SQL Server (host access for DBA tools)
+      - "80:80"       # PBIRS web portal  → Power BI Desktop server URL
+      - "443:443"     # PBIRS HTTPS portal (if TLS cert is configured)
+      - "8080:8080"   # PBIRS REST API / dataset endpoint
+    volumes:
+      - C:/temp2:C:/temp
+    environment:
+      sa_password:    ${SA_PASSWORD}
+      ACCEPT_EULA:    "Y"
+      pbirs_user:     ${PBIRS_USER}
+      pbirs_password: ${PBIRS_PASSWORD}
+    mem_limit: 6048m
+    # networks:
+      # - powerbi-net
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Oracle Database 23c Free — Users / Company Hierarchy / Transactions
+  # (Linux container — WSL2 engine, gvenzl/oracle-free community image)
+  # ---------------------------------------------------------------------------
+  oracledb:
+    platform: linux/amd64
+    build:
+      context: ./oracledb
+    image: powerbi-oracledb:latest
+    # ── Ports ─────────────────────────────────────────────────────────────────
+    # Power BI Desktop connection string for the CompanyData schema:
+    #   Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=FREEPDB1)));User Id=companydata;Password=<pw>;
+    ports:
+      - "1521:1521"   # Oracle Listener → Power BI Desktop data source
+    environment:
+      ORACLE_PASSWORD:    ${SA_PASSWORD}       # SYS / SYSTEM password
+      APP_USER:           companydata           # schema / application user
+      APP_USER_PASSWORD:  ${SA_PASSWORD}        # app-user password
+    volumes:
+      - oracledb-data:/opt/oracle/oradata   # persist database files
+    # networks:
+      # - powerbi-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "sqlplus -L -S $$APP_USER/$$APP_USER_PASSWORD@//localhost/FREEPDB1 < /dev/null || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 120s
+
+# networks:
+#   powerbi-net:
+#     driver: nat
+volumes:
+  oracledb-data:

@@ -21,6 +21,8 @@ example:
 
 ```
 docker run -d -p 1433:1433 -p 80:80 -v C:/temp/:C:/temp/ -e sa_password=<YOUR SA PASSWORD> -e ACCEPT_EULA=Y -e pbirs_user=PBIAdmin -e pbirs_password=<YOUR PBIAdmin PASSWORD> --memory 6048mb healistichngineer/pbirs1.14
+
+docker run -d -p 1433:1433 -p 80:80 -v C:/temp2/:C:/temp/ -e sa_password=yesPl3ase -e ACCEPT_EULA=Y -e pbirs_user=PBIAdmin -e pbirs_password=yesPl3ase --memory 6048mb healistichngineer/pbirs1.14
 ```
 
 then access PowerBI Report Server at http://localhost/reports and login using pbirs_user

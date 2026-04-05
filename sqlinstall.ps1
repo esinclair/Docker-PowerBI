@@ -6,7 +6,7 @@ new-item -Path C:\SQLServer2019-DEV-x64-ENU\ -Name update -ItemType Directory
 #finding latest 2019 CU
 $downloadId = "100809"
 $MajorVersion ="2019"
-$response = Invoke-WebRequest -Uri "https://www.microsoft.com/en-us/download/details.aspx?id=$downloadId" -ErrorAction Ignore
+$response = Invoke-WebRequest -Uri "https://www.microsoft.com/en-us/download/details.aspx?id=$downloadId" -UseBasicParsing -ErrorAction Ignore
 $url = $response.Content | 
     Select-String -AllMatches -Pattern "(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?" | 
     ForEach-Object { $_.Matches.Value } | 
