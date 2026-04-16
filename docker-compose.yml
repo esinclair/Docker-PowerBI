@@ -17,14 +17,30 @@
 #   docker compose up -d
 #
 # Network note:
-#   Both services share the 'powerbi-net' bridge network.
-#   From within PBIRS, the Oracle data source is reachable at:
-#     (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=oracledb)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=FREEPDB1)))
-#   The host-side Oracle port is 1521.
+#   Windows containers (pbirs) and Linux containers (mssqldb, oracledb) run in
+#   separate engine modes and cannot share a Docker bridge network.  The Windows
+#   host acts as the intermediary — Linux containers expose ports to the host,
+#   and PBIRS reaches them via host.docker.internal.
 #
-#   The SQL Server (Linux) data source is reachable at:
-#     Server=mssqldb,1433;Database=CompanyData;User Id=companydata;Password=<pw>;
-#   The host-side SQL Server port is 1434 (1433 is used by the PBIRS Windows container).
+#   Workflow (two options):
+#
+#   Option A — All Windows containers (recommended: pbirs + mssqldb-win on same NAT network):
+#     Switch Docker Desktop to Windows containers mode, then:
+#       docker compose up -d mssqldb-win pbirs
+#     From within PBIRS, SQL Server connection string:
+#       Server=mssqldb-win,1433;Database=CompanyData;User Id=companydata;Password=<pw>;
+#
+#   Option B — Two-phase (Linux mssqldb + Windows pbirs via host bridge):
+#     1. Linux containers mode  → docker compose up -d mssqldb oracledb
+#     2. Windows containers mode → docker compose up -d pbirs
+#     From within PBIRS:
+#       SQL Server : Server=host.docker.internal,1434;Database=CompanyData;User Id=companydata;Password=<pw>;
+#       Oracle     : (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=host.docker.internal)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=FREEPDB1)))
+#
+#   Host-side ports:
+#     mssqldb (Linux)  : localhost,1434
+#     mssqldb-win      : localhost,1435
+#     Oracle           : localhost,1521
 #
 # Credentials are read from .env — copy .env.example → .env and adjust.
 # =============================================================================
@@ -57,6 +73,7 @@ services:
       pbirs_user:     ${PBIRS_USER}
       pbirs_password: ${PBIRS_PASSWORD}
     mem_limit: 6048m
+    # host.docker.internal is injected automatically by Docker Desktop for Windows containers
     # networks:
       # - powerbi-net
     restart: unless-stopped
@@ -122,9 +139,44 @@ services:
       retries: 10
       start_period: 60s
 
+  # ---------------------------------------------------------------------------
+  # Microsoft SQL Server 2019 on Windows — CompanyData schema (Windows container)
+  # Runs in Windows container mode alongside pbirs on the same Docker NAT network.
+  # PBIRS connects directly by container name: Server=mssqldb-win,1433
+  # Build context is the repo root so sqlinstall.ps1 and mssqldb/init.sql are reachable.
+  # ---------------------------------------------------------------------------
+  mssqldb-win:
+    platform: windows/amd64
+    build:
+      context: .
+      dockerfile: mssqldb-win/Dockerfile
+    image: powerbi-mssqldb-win:latest
+    # ── Ports ─────────────────────────────────────────────────────────────────
+    # Power BI Desktop connection string (direct host access):
+    #   Server=localhost,1435;Database=CompanyData;User Id=companydata;Password=<pw>;
+    # From within PBIRS container (same Docker NAT network):
+    #   Server=mssqldb-win,1433;Database=CompanyData;User Id=companydata;Password=<pw>;
+    ports:
+      - "1435:1433"   # host-side access for DBA tools / Power BI Desktop
+    environment:
+      SA_PASSWORD:        ${SA_PASSWORD}
+      MSSQL_APP_PASSWORD: ${SA_PASSWORD}
+      ACCEPT_EULA:        "Y"
+    volumes:
+      - mssqldb-win-data:C:/var/opt/mssql   # persist database files across restarts
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "powershell", "-command",
+             "try { sqlcmd -S localhost -E -Q 'SELECT 1' -l 2 | Out-Null; exit 0 } catch { exit 1 }"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 180s
+
 # networks:
 #   powerbi-net:
 #     driver: nat
 volumes:
   oracledb-data:
   mssqldb-data:
+  mssqldb-win-data:

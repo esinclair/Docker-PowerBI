@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>PowerBI.CustomAuth</AssemblyName>
+    <RootNamespace>PowerBI.CustomAuth</RootNamespace>
+    <Nullable>disable</Nullable>
+    <Optimize>true</Optimize>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <!--
+    Microsoft.ReportingServices.Interfaces.dll ships with PBIRS.
+    It is available at build time because pbiinstall runs before this step.
+  -->
+  <ItemGroup>
+    <Reference Include="Microsoft.ReportingServices.Interfaces">
+      <HintPath>C:\Program Files\Microsoft Power BI Report Server\PBIRS\ReportServer\bin\Microsoft.ReportingServices.Interfaces.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="System.Web" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+</Project>

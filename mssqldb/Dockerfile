@@ -8,7 +8,8 @@ USER root
 COPY entrypoint.sh /usr/src/app/entrypoint.sh
 COPY init.sql      /usr/src/app/init.sql
 
-RUN chmod +x /usr/src/app/entrypoint.sh
+RUN sed -i 's/\r$//' /usr/src/app/entrypoint.sh && \
+    chmod +x /usr/src/app/entrypoint.sh
 
 # mssql is the default non-root user provided by this base image
 USER mssql
