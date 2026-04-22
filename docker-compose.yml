@@ -53,7 +53,7 @@ services:
   pbirs:
     platform: windows/amd64
     build:
-      context: .
+      context: ./pbirs
     image: pbirs:latest
     # ── Ports exposed to the host (and therefore to Power BI Desktop) ──────────
     # Power BI Desktop connects to Report Server via the web portal URL.
@@ -62,7 +62,7 @@ services:
     # Port 8080 is the PBIRS REST API / dataset endpoint.
     ports:
       - "1433:1433"   # PBIRS internal SQL Server (host access for DBA tools)
-      - "80:80"       # PBIRS web portal  → Power BI Desktop server URL
+      - "8081:80"       # PBIRS web portal  → Power BI Desktop server URL
       - "443:443"     # PBIRS HTTPS portal (if TLS cert is configured)
       - "8080:8080"   # PBIRS REST API / dataset endpoint
     volumes:
@@ -140,7 +140,7 @@ services:
       start_period: 60s
 
   # ---------------------------------------------------------------------------
-  # Microsoft SQL Server 2019 on Windows — CompanyData schema (Windows container)
+  # Microsoft SQL Server 2022 on Windows — CompanyData schema (Windows container)
   # Runs in Windows container mode alongside pbirs on the same Docker NAT network.
   # PBIRS connects directly by container name: Server=mssqldb-win,1433
   # Build context is the repo root so sqlinstall.ps1 and mssqldb/init.sql are reachable.

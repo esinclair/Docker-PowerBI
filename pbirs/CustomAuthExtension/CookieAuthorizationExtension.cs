@@ -18,9 +18,15 @@ namespace PowerBI.CustomAuth
 
         public void SetConfiguration(string configuration) { }
 
-        public byte[] CreateSecurityDescriptor(AceCollection acl,
-                                               SecurityItemType itemType,
-                                               out string stringSecDesc)
+        // ── CheckAccess: grant everything to any authenticated user ──────────────
+
+        private static bool IsAuthenticated(string userName)
+            => !string.IsNullOrEmpty(userName);
+
+        public byte[] CreateSecurityDescriptor(
+            AceCollection acl,
+            SecurityItemType itemType,
+            out string stringSecDesc)
         {
             stringSecDesc = null;
             if (acl == null) return new byte[0];
@@ -33,53 +39,48 @@ namespace PowerBI.CustomAuth
             }
         }
 
-        // ── CheckAccess: grant everything to any authenticated user ──────────────
-
-        private static bool IsAuthenticated(string userName)
-            => !string.IsNullOrEmpty(userName);
-
         public bool CheckAccess(string userName, IntPtr userToken,
-                                byte[] secDesc, CatalogOperation requiredOperation)
+            byte[] secDesc, CatalogOperation requiredOperation)
             => IsAuthenticated(userName);
 
         public bool CheckAccess(string userName, IntPtr userToken,
-                                byte[] secDesc, CatalogOperation[] requiredOperations)
+            byte[] secDesc, CatalogOperation[] requiredOperations)
             => IsAuthenticated(userName);
 
         public bool CheckAccess(string userName, IntPtr userToken,
-                                byte[] secDesc, ReportOperation requiredOperation)
+            byte[] secDesc, ReportOperation requiredOperation)
             => IsAuthenticated(userName);
 
         public bool CheckAccess(string userName, IntPtr userToken,
-                                byte[] secDesc, FolderOperation requiredOperation)
+            byte[] secDesc, FolderOperation requiredOperation)
             => IsAuthenticated(userName);
 
         public bool CheckAccess(string userName, IntPtr userToken,
-                                byte[] secDesc, FolderOperation[] requiredOperations)
+            byte[] secDesc, FolderOperation[] requiredOperations)
             => IsAuthenticated(userName);
 
         public bool CheckAccess(string userName, IntPtr userToken,
-                                byte[] secDesc, ResourceOperation requiredOperation)
+            byte[] secDesc, ResourceOperation requiredOperation)
             => IsAuthenticated(userName);
 
         public bool CheckAccess(string userName, IntPtr userToken,
-                                byte[] secDesc, ResourceOperation[] requiredOperations)
+            byte[] secDesc, ResourceOperation[] requiredOperations)
             => IsAuthenticated(userName);
 
         public bool CheckAccess(string userName, IntPtr userToken,
-                                byte[] secDesc, DatasourceOperation requiredOperation)
+            byte[] secDesc, DatasourceOperation requiredOperation)
             => IsAuthenticated(userName);
 
         public bool CheckAccess(string userName, IntPtr userToken,
-                                byte[] secDesc, ModelOperation requiredOperation)
+            byte[] secDesc, ModelOperation requiredOperation)
             => IsAuthenticated(userName);
 
         public bool CheckAccess(string userName, IntPtr userToken,
-                                byte[] secDesc, ModelItemOperation requiredOperation)
+            byte[] secDesc, ModelItemOperation requiredOperation)
             => IsAuthenticated(userName);
 
         public StringCollection GetPermissions(string userName, IntPtr userToken,
-                                               SecurityItemType itemType, byte[] secDesc)
+            SecurityItemType itemType, byte[] secDesc)
         {
             var perms = new StringCollection();
             if (IsAuthenticated(userName))

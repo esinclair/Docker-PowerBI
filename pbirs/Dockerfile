@@ -1,7 +1,7 @@
-FROM mcr.microsoft.com/windows/servercore:ltsc2019
-LABEL Name=PowerBI Version=0.1.15 maintainer="John Hall"
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+LABEL Name=PowerBI Version=0.1.16 maintainer="John Hall"
 # Download Link:
-ENV SQL "https://go.microsoft.com/fwlink/?linkid=866662"
+ENV SQL "https://download.microsoft.com/download/c/c/9/cc9c6797-383c-4b24-8920-dc057c1de9d3/SQL2022-SSEI-Dev.exe"
 ENV sa_password="_" \
     attach_dbs="[]" \
     ACCEPT_EULA="_" \
@@ -15,10 +15,15 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPref
 
 WORKDIR /
 
+# Copy pre-downloaded installers (if any) for faster builds.
+# Place SQL2022-SSEI-Dev.exe and/or PowerBIReportServer.exe in pbirs/installers/
+# to avoid re-downloading on every build.
+COPY installers/ /installers/
+
 # Copy scripts that rarely change first for layer caching
 COPY sqlinstall.ps1 sqlstart.ps1 pbiinstall.ps1 configurePBIRS.ps1 start.ps1 newadmin.ps1 /
 
-# Install SQL Server 2019
+# Install SQL Server 2022
 RUN .\sqlinstall
 # Install PowerBI Report Server
 RUN .\pbiinstall

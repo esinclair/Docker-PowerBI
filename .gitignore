@@ -1,1 +1,3 @@
 .env
+# Large installer binaries cached locally for faster Docker builds
+pbirs/installers/*.exe

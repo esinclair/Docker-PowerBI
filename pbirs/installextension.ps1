@@ -18,12 +18,12 @@
        - <authorization><deny users="?" /></authorization>
        - <machineKey> matching the one in rsreportserver.config
     5. Patches Portal WebHost.exe.config with the same machineKey.
-    6. Creates logon.aspx (translates loggedInUser cookie → FormsAuth ticket).
+    6. Creates logon.aspx (translates loggedInUser cookie -> FormsAuth ticket).
 #>
 
 $ErrorActionPreference = 'Stop'
 
-# ── Paths ──────────────────────────────────────────────────────────────────────
+# -- Paths ----------------------------------------------------------------------
 $pbirs   = "C:\Program Files\Microsoft Power BI Report Server\PBIRS\ReportServer"
 $bin     = Join-Path $pbirs "bin"
 $portal  = "C:\Program Files\Microsoft Power BI Report Server\PBIRS\Portal"
@@ -34,7 +34,7 @@ $dll     = "C:\CustomAuthExtension\bin\Release\net472\PowerBI.CustomAuth.dll"
 $validationKey = "E5EC42B8B9B7608B290342C07AEE2B44ED8C0E0850BAFC5B4D3AE12FD69DE438D56B8EA50B6641F4311CDEF39B4160E2F3E10857F813A0B3C085B66E0233F45A"
 $decryptionKey = "F0D6B285C88D1D2B9B8A0C34E5F6718A42D3E0B9C8A7F6E5D4C3B2A190807060"
 
-# ── 1. Copy DLL to all required directories ───────────────────────────────────
+# -- 1. Copy DLL to all required directories -----------------------------------
 Write-Host "[CustomAuth] Copying DLL..."
 Copy-Item -Path $dll -Destination (Join-Path $bin "PowerBI.CustomAuth.dll") -Force
 foreach ($dir in @($portal, $powerbi)) {
@@ -44,7 +44,7 @@ foreach ($dir in @($portal, $powerbi)) {
 }
 Write-Host "[CustomAuth] DLL copied to ReportServer, Portal, PowerBI."
 
-# ── 2. Patch rsreportserver.config ─────────────────────────────────────────────
+# -- 2. Patch rsreportserver.config ---------------------------------------------
 $rsConfig = Join-Path $pbirs "rsreportserver.config"
 Write-Host "[CustomAuth] Patching $rsConfig"
 
@@ -76,7 +76,7 @@ $authExt.SetAttribute("Type", "PowerBI.CustomAuth.CookieAuthExtension, PowerBI.C
 $authNode.AppendChild($authExt) | Out-Null
 $extNode.AppendChild($authNode) | Out-Null
 
-# 2c. AuthenticationTypes → <Custom/>
+# 2c. AuthenticationTypes -> <Custom/>
 $authSection = $xml.Configuration.Authentication
 if (-not $authSection) {
     $authSection = $xml.CreateElement("Authentication")
@@ -137,7 +137,7 @@ foreach ($cookieName in @("sqlAuthCookie", "loggedInUser")) {
 $xml.Save($rsConfig)
 Write-Host "[CustomAuth] rsreportserver.config updated."
 
-# ── 3. Patch rssrvpolicy.config ────────────────────────────────────────────────
+# -- 3. Patch rssrvpolicy.config ------------------------------------------------
 $policyConfig = Join-Path $pbirs "rssrvpolicy.config"
 Write-Host "[CustomAuth] Patching $policyConfig"
 
@@ -176,7 +176,7 @@ if ($myComputerGroup) {
     Write-Warning "[CustomAuth] Could not locate CodeGroup node in rssrvpolicy.config."
 }
 
-# ── 4. Patch ReportServer web.config ──────────────────────────────────────────
+# -- 4. Patch ReportServer web.config ------------------------------------------
 $webConfig = Join-Path $pbirs "web.config"
 Write-Host "[CustomAuth] Patching $webConfig"
 [xml]$webXml = Get-Content -Raw $webConfig
@@ -229,7 +229,7 @@ $mkWeb.SetAttribute("decryption",    "AES")
 $webXml.Save($webConfig)
 Write-Host "[CustomAuth] web.config updated."
 
-# ── 5. Patch Portal Microsoft.ReportingServices.Portal.WebHost.exe.config ─────
+# -- 5. Patch Portal Microsoft.ReportingServices.Portal.WebHost.exe.config -----
 $portalConfig = Join-Path $portal "Microsoft.ReportingServices.Portal.WebHost.exe.config"
 if (Test-Path $portalConfig) {
     Write-Host "[CustomAuth] Patching $portalConfig"
@@ -253,10 +253,10 @@ if (Test-Path $portalConfig) {
     $pXml.Save($portalConfig)
     Write-Host "[CustomAuth] Portal WebHost.exe.config updated."
 } else {
-    Write-Warning "[CustomAuth] Portal config not found at $portalConfig — skipping."
+    Write-Warning "[CustomAuth] Portal config not found at $portalConfig -- skipping."
 }
 
-# ── 6. Create logon.aspx ──────────────────────────────────────────────────────
+# -- 6. Create logon.aspx ------------------------------------------------------
 $logonAspx = Join-Path $pbirs "logon.aspx"
 Write-Host "[CustomAuth] Creating $logonAspx"
 
@@ -275,7 +275,7 @@ protected void Page_Load(object sender, EventArgs e)
         return;
     }
 
-    // Translate loggedInUser cookie → FormsAuth ticket
+    // Translate loggedInUser cookie -> FormsAuth ticket
     HttpCookie c = Request.Cookies["loggedInUser"];
     if (c != null && !string.IsNullOrEmpty(c.Value))
     {

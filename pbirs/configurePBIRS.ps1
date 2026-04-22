@@ -19,7 +19,7 @@ If (! $configset.IsInitialized) {
     [string]$dbscript = $configset.GenerateDatabaseCreationScript("ReportServer", 1033, $false).Script
 
     # Import the SQL Server PowerShell module
-    Import-Module -name 'C:\Program Files (x86)\Microsoft SQL Server\150\Tools\PowerShell\Modules\sqlps'
+    Import-Module -name 'C:\Program Files (x86)\Microsoft SQL Server\160\Tools\PowerShell\Modules\sqlps'
 
     # Establish a connection to the 
     $conn = New-Object Microsoft.SqlServer.Management.Common.ServerConnection -ArgumentList $env:ComputerName
